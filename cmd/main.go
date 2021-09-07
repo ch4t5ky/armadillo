@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/ch4t5ky/lab_1/locker/internal/helpers"
+	"github.com/ch4t5ky/armadillo/internal/helpers"
 )
 
 func main() {
@@ -12,7 +12,7 @@ func main() {
 	action := *actionPtr
 	switch action {
 	case "lock":
-		break
+		helpers.LockFiles()
 	case "unlock":
 		break
 	default:
