@@ -7,16 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 )
-
-func GetFilesByMask(mask string) []string {
-	files, err := filepath.Glob(mask)
-	if err != nil {
-		panic(err)
-	}
-	return files
-}
 
 func getValuesFromTemplate() (string, []string) {
 	file, err := os.Open("template.tbl")
@@ -42,7 +33,7 @@ func getValuesFromTemplate() (string, []string) {
 }
 
 func updateValueInFile(password string, templates []string) {
-	hashPassword := createMD5Hasg(password)
+	hashPassword := createMD5Hash(password)
 	fmt.Println(hashPassword)
 
 	file, err := os.OpenFile("template.tbl", os.O_RDWR, 644)
@@ -57,6 +48,7 @@ func updateValueInFile(password string, templates []string) {
 	}
 	err = file.Sync()
 }
+
 func LockFiles() {
 	password, templates := getValuesFromTemplate()
 	for _, value := range templates {
@@ -69,7 +61,7 @@ func LockFiles() {
 	updateValueInFile(password, templates)
 }
 
-func createMD5Hasg(text string) string {
+func createMD5Hash(text string) string {
 	hasher := md5.New()
 	hasher.Write([]byte(text))
 	return hex.EncodeToString(hasher.Sum(nil))
