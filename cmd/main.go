@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/ch4t5ky/armadillo/internal/windows"
+	"github.com/ch4t5ky/armadillo/internal/service"
+	svc2 "github.com/ch4t5ky/armadillo/internal/svc"
 	"golang.org/x/sys/windows/svc"
 	"log"
 	"os"
@@ -28,7 +29,7 @@ func main() {
 	}
 
 	if inService {
-		windows.RunService(svcName, false)
+		service.RunService(svcName, false)
 		return
 	}
 
@@ -39,19 +40,19 @@ func main() {
 	cmd := strings.ToLower(os.Args[1])
 	switch cmd {
 	case "debug":
-		windows.RunService(svcName, true)
+		service.RunService(svcName, true)
 		return
 	case "install":
-		err = windows.InstallService(svcName, "my service")
+		err = svc2.InstallService(svcName, "my service")
 	case "remove":
-		err = windows.RemoveService(svcName)
+		err = svc2.RemoveService(svcName)
 	case "start":
-		err = windows.StartService(svcName)
+		err = svc2.StartService(svcName)
 	case "stop":
 		if len(os.Args) < 3 {
 			fmt.Println("No password entered")
 		}
-		err = windows.ControlService(svcName, svc.Stop, svc.Stopped)
+		err = svc2.ControlService(svcName, svc.Stop, svc.Stopped)
 	default:
 		usage(fmt.Sprintf("invalid command %s", cmd))
 	}

@@ -1,4 +1,4 @@
-package windows
+package service
 
 import (
 	"fmt"
@@ -9,7 +9,8 @@ import (
 
 var elog debug.Log
 
-type service struct{}
+type service struct {
+}
 
 func (m *service) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue
@@ -19,8 +20,14 @@ loop:
 		select {
 		case c := <-r:
 			switch c.Cmd {
+			case svc.Continue:
+				elog.Info(1, "Running protection.")
+				changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
+			case svc.Pause:
+				elog.Info(1, "Stop protection.")
+				changes <- svc.Status{State: svc.Paused, Accepts: cmdsAccepted}
 			case svc.Stop, svc.Shutdown:
-				fmt.Println("Enter your password: ")
+				elog.Info(1, "")
 				break loop
 			default:
 				elog.Error(1, fmt.Sprintf("unexpected control request #%d", c))
