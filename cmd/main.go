@@ -27,13 +27,8 @@ func main() {
 		log.Fatalf("failed to determine if we are running in service: %v", err)
 	}
 
-	path, err := os.Getwd()
-	if err != nil {
-		log.Fatalf("failed to recognise working directory")
-	}
-
 	if inService {
-		service.RunService(svcName, path)
+		service.RunService(svcName, ":1111")
 		return
 	}
 
@@ -50,10 +45,6 @@ func main() {
 	case "start":
 		err = service.StartService(svcName)
 	case "stop":
-		if len(os.Args) < 3 {
-			fmt.Println("No password entered")
-			return
-		}
 		err = service.ControlService(svcName, svc.Stop, svc.Stopped)
 	default:
 		usage(fmt.Sprintf("invalid command %s", cmd))

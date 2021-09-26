@@ -19,7 +19,7 @@ func StartService(name string) error {
 		return fmt.Errorf("could not access service: %v", err)
 	}
 	defer s.Close()
-	err = s.Start("is", "manual-started")
+	err = s.Start()
 	if err != nil {
 		return fmt.Errorf("could not start service: %v", err)
 	}
@@ -38,6 +38,7 @@ func ControlService(name string, c svc.Cmd, to svc.State) error {
 	}
 	defer s.Close()
 	status, err := s.Control(c)
+
 	if err != nil {
 		return fmt.Errorf("could not send control=%d: %v", c, err)
 	}
