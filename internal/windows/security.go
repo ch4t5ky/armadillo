@@ -1,37 +1,46 @@
 package windows
 
 import (
-	"fmt"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
 
 var (
-	advAPI32DLL          = windows.NewLazyDLL("Advapi32.dll")
-	setNamedSecurityInfo = advAPI32DLL.NewProc("SetNamedSecurityInfo")
+	advAPI32DLL              = windows.MustLoadDLL("Advapi32.dll")
+	procGetNamedSecurityInfo = advAPI32DLL.MustFindProc("GetNamedSecurityInfoW")
+	procSetNamedSecurityInfo = advAPI32DLL.MustFindProc("SetNamedSecurityInfo")
 )
 
-func SetNamedSecurityInfo(filepath string) {
-	/*
-		DWORD SetNamedSecurityInfo(
-		  LPSTR                pObjectName,
-		  SE_OBJECT_TYPE       ObjectType,
-		  SECURITY_INFORMATION SecurityInfo,
-		  PSID                 psidOwner,
-		  PSID                 psidGroup,
-		  PACL                 pDacl,
-		  PACL                 pSacl
-		);
-	*/
-
-	information := windows.SECURITY_INFORMATION(windows.OWNER_SECURITY_INFORMATION)
-	retCode, _, err := setNamedSecurityInfo.Call(
-		uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(filepath))),
-		uintptr(windows.SE_FILE_OBJECT),
-		uintptr(information),
+func GetNamedSecurityInfo(objectName string, objectType int32, secInfo uint32, owner, group **windows.SID, dacl, sacl, secDesc *windows.Handle) error {
+	ret, _, err := procGetNamedSecurityInfo.Call(
+		uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(objectName))),
+		uintptr(objectType),
+		uintptr(secInfo),
+		uintptr(unsafe.Pointer(owner)),
+		uintptr(unsafe.Pointer(group)),
+		uintptr(unsafe.Pointer(dacl)),
+		uintptr(unsafe.Pointer(sacl)),
+		uintptr(unsafe.Pointer(secDesc)),
 	)
-	if retCode != 0 {
-		fmt.Println("Function succeed: ", err.Error())
+	if ret != 0 {
+		return err
 	}
+	return nil
+}
+
+func SetNamedSecurityInfo(objectName string, objectType int32, secInfo uint32, owner, group *windows.SID, dacl, sacl windows.Handle) error {
+	ret, _, err := procSetNamedSecurityInfo.Call(
+		uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(objectName))),
+		uintptr(objectType),
+		uintptr(secInfo),
+		uintptr(unsafe.Pointer(owner)),
+		uintptr(unsafe.Pointer(group)),
+		uintptr(dacl),
+		uintptr(sacl),
+	)
+	if ret != 0 {
+		return err
+	}
+	return nil
 }

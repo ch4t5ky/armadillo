@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/ch4t5ky/armadillo/internal/service"
-	svc2 "github.com/ch4t5ky/armadillo/internal/svc"
 	"golang.org/x/sys/windows/svc"
 	"log"
 	"os"
@@ -17,7 +16,7 @@ func usage(errmsg string) {
 			"       where <command> is one of\n"+
 			"       install, remove, debug, start, stop, pause or continue.\n",
 		errmsg, os.Args[0])
-	os.Exit(2)
+	os.Exit(1)
 }
 
 func main() {
@@ -28,8 +27,13 @@ func main() {
 		log.Fatalf("failed to determine if we are running in service: %v", err)
 	}
 
+	path, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("failed to recognise working directory")
+	}
+
 	if inService {
-		service.RunService(svcName, false)
+		service.RunService(svcName, path)
 		return
 	}
 
@@ -39,20 +43,18 @@ func main() {
 
 	cmd := strings.ToLower(os.Args[1])
 	switch cmd {
-	case "debug":
-		service.RunService(svcName, true)
-		return
 	case "install":
-		err = svc2.InstallService(svcName, "my service")
+		err = service.InstallService(svcName, "Service for protection directory")
 	case "remove":
-		err = svc2.RemoveService(svcName)
+		err = service.RemoveService(svcName)
 	case "start":
-		err = svc2.StartService(svcName)
+		err = service.StartService(svcName)
 	case "stop":
 		if len(os.Args) < 3 {
 			fmt.Println("No password entered")
+			return
 		}
-		err = svc2.ControlService(svcName, svc.Stop, svc.Stopped)
+		err = service.ControlService(svcName, svc.Stop, svc.Stopped)
 	default:
 		usage(fmt.Sprintf("invalid command %s", cmd))
 	}

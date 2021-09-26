@@ -10,11 +10,13 @@ import (
 var elog debug.Log
 
 type service struct {
+	DirectoryForProtection string
 }
 
 func (m *service) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
+	elog.Info(1, m.DirectoryForProtection)
 loop:
 	for {
 		select {
@@ -27,7 +29,7 @@ loop:
 				elog.Info(1, "Stop protection.")
 				changes <- svc.Status{State: svc.Paused, Accepts: cmdsAccepted}
 			case svc.Stop, svc.Shutdown:
-				elog.Info(1, "")
+				elog.Info(1, "Stop protection.")
 				break loop
 			default:
 				elog.Error(1, fmt.Sprintf("unexpected control request #%d", c))
@@ -38,24 +40,17 @@ loop:
 	return
 }
 
-func RunService(name string, isDebug bool) {
+func RunService(name string, path string) {
 	var err error
-	if isDebug {
-		elog = debug.New(name)
-	} else {
-		elog, err = eventlog.Open(name)
-		if err != nil {
-			return
-		}
+	elog, err = eventlog.Open(name)
+	if err != nil {
+		return
 	}
 	defer elog.Close()
 
 	elog.Info(1, fmt.Sprintf("starting %s service", name))
 	run := svc.Run
-	if isDebug {
-		run = debug.Run
-	}
-	err = run(name, &service{})
+	err = run(name, &service{DirectoryForProtection: path})
 	if err != nil {
 		elog.Error(1, fmt.Sprintf("%s service failed: %v", name, err))
 		return
