@@ -1,15 +1,15 @@
 package windows
 
 import (
-	"unsafe"
-
 	"golang.org/x/sys/windows"
+	"unsafe"
 )
 
 var (
 	advAPI32DLL              = windows.MustLoadDLL("Advapi32.dll")
 	procGetNamedSecurityInfo = advAPI32DLL.MustFindProc("GetNamedSecurityInfoW")
-	procSetNamedSecurityInfo = advAPI32DLL.MustFindProc("SetNamedSecurityInfo")
+	procSetNamedSecurityInfo = advAPI32DLL.MustFindProc("SetNamedSecurityInfoW")
+	procSetEntriesInAclW     = advAPI32DLL.MustFindProc("SetEntriesInAclW")
 )
 
 func GetNamedSecurityInfo(objectName string, objectType int32, secInfo uint32, owner, group **windows.SID, dacl, sacl, secDesc *windows.Handle) error {
@@ -38,6 +38,19 @@ func SetNamedSecurityInfo(objectName string, objectType int32, secInfo uint32, o
 		uintptr(unsafe.Pointer(group)),
 		uintptr(dacl),
 		uintptr(sacl),
+	)
+	if ret != 0 {
+		return err
+	}
+	return nil
+}
+
+func SetEntriesInAcl(entries []ExplicitAccess, oldAcl windows.Handle, newAcl *windows.Handle) error {
+	ret, _, err := procSetEntriesInAclW.Call(
+		uintptr(len(entries)),
+		uintptr(unsafe.Pointer(&entries[0])),
+		uintptr(oldAcl),
+		uintptr(unsafe.Pointer(newAcl)),
 	)
 	if ret != 0 {
 		return err

@@ -9,8 +9,8 @@ import (
 	"os"
 )
 
-func getValuesFromTemplate() (string, []string) {
-	file, err := os.Open("template.tbl")
+func GetValuesFromTemplate(path string) (string, []string) {
+	file, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func updateValueInFile(password string, templates []string) {
 }
 
 func LockFiles() {
-	password, templates := getValuesFromTemplate()
+	password, templates := GetValuesFromTemplate("test")
 	for _, value := range templates {
 		fmt.Println("Template: " + value)
 	}
