@@ -23,7 +23,23 @@ func StartService(name string, path string) error {
 	if err != nil {
 		return fmt.Errorf("could not start service: %v", err)
 	}
+
+	for {
+		status := getState(s)
+		if status == svc.Running {
+			break
+		}
+		time.Sleep(5 * time.Second)
+	}
 	return nil
+}
+
+func getState(s *mgr.Service) svc.State {
+	status, err := s.Query()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return status.State
 }
 
 func ControlService(name string, c svc.Cmd, to svc.State) error {

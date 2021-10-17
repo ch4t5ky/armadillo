@@ -55,7 +55,6 @@ func main() {
 		fmt.Scanf("%s\n", password)
 		helpers.UpdatePasswordInFile(path, password)
 		err = service.StartService(svcName, path)
-		windows.Chmod(path+"\\template.tbl", 0000)
 	case "stop":
 		path, err := os.Getwd()
 		if err != nil {

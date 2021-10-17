@@ -15,6 +15,7 @@ import (
 var elog debug.Log
 
 type Service struct {
+	patterns []string
 }
 
 func (m *Service) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
