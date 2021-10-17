@@ -8,7 +8,7 @@ import (
 	"golang.org/x/sys/windows/svc/mgr"
 )
 
-func StartService(name string) error {
+func StartService(name string, path string) error {
 	m, err := mgr.Connect()
 	if err != nil {
 		return err
@@ -19,7 +19,7 @@ func StartService(name string) error {
 		return fmt.Errorf("could not access service: %v", err)
 	}
 	defer s.Close()
-	err = s.Start()
+	err = s.Start(path)
 	if err != nil {
 		return fmt.Errorf("could not start service: %v", err)
 	}

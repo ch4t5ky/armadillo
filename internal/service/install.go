@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"golang.org/x/sys/windows/svc"
 	"os"
 	"path/filepath"
 
@@ -83,4 +84,26 @@ func RemoveService(name string) error {
 		return fmt.Errorf("RemoveEventLogSource() failed: %s", err)
 	}
 	return nil
+}
+
+func RunService(name string) {
+	var err error
+	elog, err = eventlog.Open(name)
+	if err != nil {
+		return
+	}
+	defer elog.Close()
+
+	elog.Info(1, fmt.Sprintf("starting %s service", name))
+	run := svc.Run
+	service := Service{}
+	err = run(
+		name,
+		&service,
+	)
+	if err != nil {
+		elog.Error(1, fmt.Sprintf("%s service failed: %v", name, err))
+		return
+	}
+	elog.Info(1, fmt.Sprintf("%s service stopped", name))
 }
