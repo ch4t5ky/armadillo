@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -28,6 +29,8 @@ func StartService(name string, path string) error {
 		status := getState(s)
 		if status == svc.Running {
 			break
+		} else if status == svc.Stopped {
+			return errors.New("Problem with booting service.")
 		}
 		time.Sleep(5 * time.Second)
 	}

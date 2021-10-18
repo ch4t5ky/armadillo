@@ -6,10 +6,10 @@ import (
 	notify "github.com/fsnotify/fsnotify"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 var elog debug.Log
@@ -32,9 +32,15 @@ func (m *Service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	if err != nil {
 		elog.Error(1, err.Error())
 	}
-	go m.StartEventsChecker(watcher.Events, patterns)
+	go m.StartEventsChecker(watcher.Events, watcher.Errors, patterns)
 
-	watcher.Add(path)
+	err = watcher.Add(path)
+	if err != nil {
+		elog.Error(1, err.Error())
+		changes <- svc.Status{State: svc.Stopped}
+		return
+	}
+
 	elog.Info(1, "Watcher started")
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 loop:
@@ -44,6 +50,7 @@ loop:
 			switch c.Cmd {
 			case svc.Stop, svc.Shutdown:
 				elog.Info(1, "Watcher stopped")
+				watcher.Remove(path)
 				watcher.Close()
 				break loop
 			default:
@@ -77,41 +84,45 @@ func (m *Service) GetPatternsFromPath(path string) (string, []string) {
 	return password, maskTemplates
 }
 
-func (m *Service) StartEventsChecker(events chan notify.Event, patterns []string) {
+func (m *Service) StartEventsChecker(events chan notify.Event, errors chan error, patterns []string) {
 	var isRenamed = false
 	var isByWatcher = false
 	var lastName = ""
 	var checkPatterns = patterns
 	for {
+		elog.Info(1, "Getting events")
 		select {
 		case event, ok := <-events:
 			if !ok {
 				return
 			}
-
+			elog.Info(1, "Event: "+event.Op.String()+".\n File: "+event.Name)
 			filename := filepath.Base(event.Name)
 			if !m.PatternCheck(checkPatterns, filename) {
-				return
+				break
 			}
-			elog.Info(1, "Event: "+event.Op.String()+".\n File: "+event.Name)
+
 			switch event.Op {
 			case notify.Create:
-				if strings.Contains(filename, "копия") {
-					for {
-						err := os.Remove(event.Name)
-						if err == nil {
-							break
-						}
+				if isByWatcher {
+					isByWatcher = false
+				} else if strings.Contains(filename, "копия") {
+					time.Sleep(1 * time.Second)
+					err := os.Remove(event.Name)
+					if err != nil {
+						elog.Error(1, err.Error())
 					}
 				} else if isRenamed {
+					time.Sleep(1 * time.Second)
 					err := os.Rename(event.Name, lastName)
 					if err != nil {
-						log.Println("Sorry: ", err.Error())
+						elog.Error(1, err.Error())
 					}
 					isRenamed, isByWatcher = false, true
 				} else {
+					time.Sleep(1 * time.Second)
 					err := os.Remove(event.Name)
-					if err == nil {
+					if err != nil {
 						elog.Error(1, err.Error())
 					}
 				}
@@ -120,8 +131,14 @@ func (m *Service) StartEventsChecker(events chan notify.Event, patterns []string
 					isRenamed = true
 					lastName = event.Name
 				}
-				isByWatcher = false
+			default:
+				break
 			}
+		case err, ok := <-errors:
+			if !ok {
+				return
+			}
+			elog.Error(1, err.Error())
 		}
 	}
 }

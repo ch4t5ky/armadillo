@@ -52,9 +52,16 @@ func main() {
 	case "start":
 		var password string
 		fmt.Println("Enter password: ")
-		fmt.Scanf("%s\n", password)
-		helpers.UpdatePasswordInFile(path, password)
+		fmt.Scanf("%s\n", &password)
+
+		fmt.Println("Booting service...")
 		err = service.StartService(svcName, path)
+		if err != nil {
+			break
+		}
+		fmt.Println("Start file protection")
+		helpers.UpdatePasswordInFile(path, password)
+		windows.Chmod(path+"\\template.tbl", 0000)
 	case "stop":
 		path, err := os.Getwd()
 		if err != nil {
@@ -65,14 +72,16 @@ func main() {
 
 		var enteredPassword string
 		fmt.Println("Enter password for file: ")
-		fmt.Scanf("%s\n", enteredPassword)
+		fmt.Scanf("%s\n", &enteredPassword)
 
-		if helpers.CreateMD5Hash(enteredPassword) != password {
-			fmt.Println("Incorrect Password: Protection continue")
-			windows.Chmod(path+"\\template.tbl", 0000)
-		} else {
+		hashedPassword := helpers.CreateMD5Hash(enteredPassword)
+
+		if hashedPassword == password {
 			fmt.Println("Correct Password: Protection stopped")
 			err = service.ControlService(svcName, svc.Stop, svc.Stopped)
+		} else {
+			fmt.Println("Incorrect Password: Protection continue")
+			windows.Chmod(path+"\\template.tbl", 0000)
 		}
 
 	default:
